@@ -36,7 +36,7 @@ app.use("/", userRouter);
 
 const PORT = 4000;
 mongoose
-  .connect("mongodb://127.0.0.1:27017/profinder", {
+  .connect(process.env.mongo_atlas, {
     useNewUrlParser: true,
     useUnifiedTopology: true,
   })
