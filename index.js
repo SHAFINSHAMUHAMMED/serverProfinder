@@ -18,7 +18,8 @@ app.use(cookieParser());
 
 // Configure specific origins, methods, and headers
 const corsOptions = {
-  origin: [process.env.UserUrl, "http://127.0.0.1:5173", "'https://www.profinder.site'"],
+  origin: "*",
+  // origin: [process.env.UserUrl, "http://127.0.0.1:5173", "https://www.profinder.site"],
   methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
   allowedHeaders: ["Content-Type", "Authorization"],
 };
