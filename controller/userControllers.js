@@ -275,7 +275,7 @@ export const getDetails = async (req, res) => {
 export const getCategory = async (req, res) => {
   try {
     const category = await categoryModel.find();
-    res.json({ status: true, category: category });
+    res.status(200).json({ status: true, category: category });
   } catch (error) {
     res.status(500).json({ status: false });
   }
@@ -307,11 +307,9 @@ export const userDetails = async (req, res) => {
 };
 
 export const userEdit = async (req, res) => {
-  console.log("object")
   const data = req.body;
   const id = req.body.id;
   const file = req.file;
-  console.log(file,'jjjjjjjjjjjjjjjjjjjjjjjjjjjjj')
   let img;
   try {
     const user = await userModel.findOne({phone:data.phone})
@@ -365,7 +363,7 @@ export const forgotpassword = async (req,res)=>{
             transporter.sendMail(mailOption, (error, info) => {
               if (error) {
                 console.log(error.message);
-                res.status(500).json({ status: false, message:'Error sending mail' });
+                res.status(200).json({ status: false, message:'Error sending mail' });
               } else {
                 res.json({ status: true });
               }
@@ -377,7 +375,7 @@ export const forgotpassword = async (req,res)=>{
           throw error;
         }
       }else{
-        res.status(404).json({ status:false, message: "User not found" });
+        res.status(200).json({ status:false, message: "User not found" });
       }
 }
 
@@ -387,12 +385,12 @@ export const changepassword = async (req,res) => {
   try {
     const user = await userModel.findOne({email:email})
     if (!user) {
-      return res.status(400).json({ status: false, message: 'User not found' });
+      return res.status(200).json({ status: false, message: 'User not found' });
     }
     if(user.password){
       const isMatch = await bcrypt.compare(pass, user.password);
       if (isMatch){
-        res.status(400).json({status:false,message:'Choose a New Password'})
+        res.status(200).json({status:false,message:'Choose a New Password'})
       }else{
         const password = await bcrypt.hash(pass,10);
         const update = await userModel.updateOne({email:email},

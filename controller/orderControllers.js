@@ -127,7 +127,7 @@ export const verifyrzpay = async (req, res) => {
         })
       }
     
-      res.json({ status: true, message: "Payment success", orderData });
+      res.status(200).json({ status: true, message: "Payment success", orderData });
     } else {
       console.log("invalid signature");
       res.json({ status: false, message: "Invalid signature" });
@@ -199,9 +199,9 @@ export const cancellJob = async (req, res) => {
     }
 
     if (cancell && update) {
-      res.json({ status: true, message: "Cancelled Amount Refunded" });
+      res.status(200).json({ status: true, message: "Cancelled Amount Refunded" });
     } else if (cancell.modifiedCount > 0) {
-      res.json({ status: true, message: "Cancelled" });
+      res.status(200).json({ status: true, message: "Cancelled" });
     } else {
       res.json({ status: false, message: "some error occured" });
     }
@@ -221,7 +221,7 @@ export const acceptJob = async (req, res) => {
     );
 
     if (confirm.modifiedCount > 0) {
-      res.json({ status: true, message: "job confirmed" });
+      res.status(200).json({ status: true, message: "job confirmed" });
     } else {
       res.json({ status: false, message: "some error occured" });
     }
@@ -278,7 +278,7 @@ export const workCompleted = async (req, res) => {
       }
 
       if (confirm.modifiedCount > 0) {
-        res.json({ status: true, message: "job completed" });
+        res.status(200).json({ status: true, message: "job completed" });
       } else {
         res.json({ status: false, message: "some error occured" });
       }

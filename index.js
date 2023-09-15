@@ -6,6 +6,7 @@ import morgan from "morgan";
 import cookieParser from "cookie-parser";
 import { Server } from "socket.io";
 import ChatModel from "./models/chatSchema.js";
+import {addMessage,markMessagesAsRead} from "./controller/chatController.js"
 dotenv.config();
 
 const app = express();
@@ -71,16 +72,7 @@ mongoose
     
   });
   
-  async function addMessage(roomId,message){
-    await ChatModel.updateOne({_id:roomId},
-      {
-        $push:
-        {messages:{
-          text:message.text,
-          senderType:message.senderType,
-          senderId:message.senderId,
-        }}})
-  }
+
 
   // async function markMessagesAsRead(chatId, storeId) {
   //   try {
@@ -104,39 +96,6 @@ mongoose
   //   }
   // }
 
-  async function markMessagesAsRead(chatId, storeId) {
-    try {
-      const result = await ChatModel.aggregate([
-        {
-          $match: { _id:new mongoose.Types.ObjectId(chatId) },
-        },
-        {
-          $unwind: '$messages',
-        },
-        {
-          $match: { 'messages.senderId': { $ne: storeId } },
-        },
-        {
-          $set: { 'messages.is_read': true },
-        },
-        {
-          $group: {
-            _id: '$_id',
-            messages: { $push: '$messages' },
-          },
-        },
-        {
-          $project: {
-            _id: 1,
-            messages: 1,
-          },
-        },
-      ]);
   
-           
-    } catch (error) {
-      console.error(error);
-    }
-  }
   
   

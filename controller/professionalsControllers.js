@@ -49,7 +49,7 @@ export const RegisterPost = async (req, res) => {
         createpro._id
       );
       if (emailResult.result) {
-        res.json({
+        res.status(200).json({
           status: true,
           message: "Registration Success Please Verify Your Mail",
         });
@@ -144,7 +144,7 @@ export const verifyMails = async (req, res) => {
     if (check) {
       if (check.isVerified === false) {
         await proModel.updateOne({ _id: id }, { $set: { isVerified: true } });
-        res.json({ Verification: true, message: "Verification successful" });
+        res.status(200).json({ Verification: true, message: "Verification successful" });
       } else {
         res.json({ Verification: false, message: "Already Verified" });
       }
@@ -196,7 +196,7 @@ export const LoginPost = async (req, res) => {
       res.json({ proSignUp });
     }
   } catch (error) {
-    res.json({ status: "failed", message: error.message });
+    res.status(500).json({ status: "failed", message: error.message });
   }
 };
 
@@ -382,7 +382,6 @@ export const getGallery = async (req,res) => {
   const proId = req.query.proId;
   try{
     const gallery = await proModel.findOne({_id:proId},{ gallery: 1 })
-    console.log(gallery);
     if(gallery){
       res.status(200).json({gallery})
     }else{
