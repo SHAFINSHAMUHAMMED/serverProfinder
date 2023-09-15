@@ -307,9 +307,11 @@ export const userDetails = async (req, res) => {
 };
 
 export const userEdit = async (req, res) => {
+  console.log("object")
   const data = req.body;
   const id = req.body.id;
   const file = req.file;
+  console.log(file,'jjjjjjjjjjjjjjjjjjjjjjjjjjjjj')
   let img;
   try {
     const user = await userModel.findOne({phone:data.phone})
