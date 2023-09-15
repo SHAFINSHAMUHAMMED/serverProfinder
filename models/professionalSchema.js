@@ -56,6 +56,9 @@ const professionalSchema = new mongoose.Schema(
             type: String,
             default:'Active'
         },
+        joinedOn: {
+            type:Date
+        },
         rating: {
             stars:{
                 type:Number,
@@ -82,6 +85,13 @@ const professionalSchema = new mongoose.Schema(
           skills: [
             {
                 skill:{
+                    type:String
+                }
+            }
+          ],
+          gallery: [
+            {
+                image:{
                     type:String
                 }
             }

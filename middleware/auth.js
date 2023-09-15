@@ -29,38 +29,32 @@ export const generateToken = (user) => {
   const token = jwt.sign(
     { _id: user._id, name: user.name, email: user.email,role: "user" },
     process.env.secretKey,
-    { expiresIn: "2h" }
   );
   return token;
 };
 
 export const generateProToken = (data) => {
-  console.log(data._id);
   const token = jwt.sign(
     { _id: data._id, email: data.email, name: data.name, role: "professional" },
-    process.env.secretKey,{expiresIn:'2h'}
+    process.env.secretKey,
   );
-  console.log(token);
   return token;
 };
 
 
 export const generateAdminToken = (data) => {
-  console.log(data, "token data");
   const token = jwt.sign(
     { _id: data._id, email: data.email, role: "admin" },
-    process.env.secretKey,{expiresIn:'2h'}
+    process.env.secretKey,
   );
   return token;
 };
 
 export const verifyAdminToken = async (req, res, next) => {
   try {
-    // Use the verifyToken function to verify the token first
     await verifyToken(req, res, async () => {
-      // Check if the user role is 'admin'
       if (req.user && req.user.role === 'admin') {
-        next(); // If admin, proceed to the next middleware
+        next();
       } else {
         res.status(403).json({ message: 'Access denied: Not an admin.' });
       }
@@ -75,17 +69,15 @@ export const verifyAdminToken = async (req, res, next) => {
 
 export const verifyProToken = async (req, res, next) => {
   try {
-    // Use the verifyToken function to verify the token first
     await verifyToken(req, res, async () => {
-      // Check if the user role is 'professional'
       if (req.user && req.user.role === 'professional') {
-        next(); // If professional, proceed to the next middleware
+        next();
       } else {
         res.status(403).json({ message: 'Access denied: Not an professional.' });
       }
     });
   } catch (error) {
-    console.log(error,'mmmmmmmmmmmmmmmmm');
+    console.log(error);
     return res
       .status(404)
       .json({ message: 'Authentication failed: invalid token.' });

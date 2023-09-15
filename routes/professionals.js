@@ -8,6 +8,10 @@ import {
   findCat,
   proDetails,
   proEdit,
+  getGallery,
+  galleryUpload,
+  deleteImage,
+  changeAvailability
 } from "../controller/professionalsControllers.js";
 import {
   cancellJob,
@@ -40,7 +44,10 @@ router.get("/loadChat",verifyProToken,loadChat)
 router.get("/listChat",verifyProToken,listChat)
 router.get("/transactions", verifyProToken,transactions)
 router.post("/withdrawReq",verifyProToken,withdrawReq)
-
+router.get("/getGallery",verifyProToken,getGallery)
+router.post("/galleryUpload",upload.array('file'),verifyProToken,galleryUpload)
+router.patch("/deleteImage", verifyProToken,deleteImage)
+router.patch("/changeAvailability",verifyProToken,changeAvailability)
 
 
 export default router;

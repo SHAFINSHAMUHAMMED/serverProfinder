@@ -8,6 +8,7 @@ import Razorpay from "razorpay";
 import crypto from "crypto";
 import { read } from "fs";
 import { log } from "console";
+import adminModel from "../models/adminSchema.js";
 
 export const getBookings = async (req, res) => {
   const proId = req.query.proId;
@@ -18,7 +19,7 @@ export const getBookings = async (req, res) => {
     if (proId) {
       const orders = await orderSchema
         .find({ proId: proId })
-        .populate("userID");
+        .populate("userID").sort({date:-1});
       if (orders) {
         const bookingsWithDate = orders.filter((order) => {
           const orderDate = new Date(order.date);
@@ -43,7 +44,7 @@ export const getBookings = async (req, res) => {
     } else if (userId) {
       const orders = await orderSchema
         .find({ userID: userId })
-        .populate("proId");
+        .populate("proId").sort({date:-1});
       if (orders) {
         res.status(200).json({ status: true, orders });
       } else {
@@ -266,6 +267,13 @@ export const workCompleted = async (req, res) => {
             userID:order.userID,
             proId:order.proId,
           });
+          const update = await adminModel.updateOne(
+            {},{
+              $inc:{
+                profit:50,
+              }
+            }
+          )
         }
       }
 
@@ -374,7 +382,6 @@ export const withdrawReq = async (req,res)=>{
   const formdata = req.body.formData
   const role = req.body.role
   const id = req.body.id
-  console.log(formdata,role,id);
   try{
     let data = null;
     if(role=='user'){

@@ -41,6 +41,9 @@ const userSchema = new mongoose.Schema(
             type: Boolean,
             default: false,
         },
+        joinedOn: {
+            type:Date
+        },
         wallet: {
               type: Number,
               default: 0,

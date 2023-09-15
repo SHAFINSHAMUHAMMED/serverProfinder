@@ -10,7 +10,9 @@ import {
   editCategory,
   deleteCategory,
   getPayOutReq,
-  upateTransReq
+  upateTransReq,
+  getDetails,
+  getTransactions
 } from "../controller/admin.js";
 import { verifyAdminToken } from "../middleware/auth.js";
 
@@ -26,5 +28,7 @@ router.patch("/editType", verifyAdminToken, editCategory);
 router.delete("/deleteType", verifyAdminToken, deleteCategory);
 router.get("/getRequests",verifyAdminToken,getPayOutReq)
 router.patch("/upateTransReq",verifyAdminToken,upateTransReq)
+router.get("/getDetails",verifyAdminToken,getDetails)
+router.get("/getTransactions",verifyAdminToken,getTransactions)
 
 export default router;

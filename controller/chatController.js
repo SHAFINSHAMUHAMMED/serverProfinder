@@ -7,8 +7,6 @@ export const loadChat = async(req,res)=>{
         const {receiverId,type,senderId,chatId} = req.query
 
             if(receiverId){
-                console.log('jjjjjjjj');
-            // user = await UserSchema.findOne({email:email})
             const chat = await chatModel.findOne({
                 $and:[
                     {user:senderId},
@@ -44,16 +42,12 @@ export const listChat = async (req,res)=>{
 
         if(type=='user'){
             const list = await chatModel.find({user:id}).populate('professional').populate('user')
-            console.log(list);
         if(list){
-            console.log(list,'llllllllllllllllllll');
             res.status(200).json({list})
         } 
         }else if(type=="pro"){
             const list = await chatModel.find({professional:id}).populate('user').populate('professional')
         if(list){
-            console.log(list);
-
             res.status(200).json({list})
         }
         }

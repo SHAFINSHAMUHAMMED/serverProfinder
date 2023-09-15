@@ -9,6 +9,7 @@ import env from "dotenv";
 env.config();
 import cloudinary from "../confing/cloudinary.js";
 import fs from "fs";
+import orderModel from "../models/orderSchema.js";
 
 export const Loginpost = async (req, res) => {
   let userSignUp = {
@@ -104,6 +105,7 @@ export const RegisterPost = async (req, res) => {
               name: userDetails.name,
               phone: userDetails.phone,
               password: userDetails.password,
+
             },
           }
         );
@@ -164,7 +166,7 @@ export const verifyMails = async (req, res) => {
     const check = await userModel.findOne({ _id: id });
     if (check) {
       if (check.isVerified === false) {
-        await userModel.updateOne({ _id: id }, { $set: { isVerified: true } });
+        await userModel.updateOne({ _id: id }, { $set: { isVerified: true, joinedOn: new Date() } });
         res.json({ Verification: true, message: "Verification successful" });
       } else {
         res.json({ Verification: false, message: "Already Verified" });
@@ -199,6 +201,7 @@ export const googleLogin = async (req, res) => {
             $set: {
               googleLogin: true,
               isVerified: true,
+              joinedOn: new Date(),
             },
           }
         );
@@ -257,7 +260,11 @@ export const findByPhone = async (req, res) => {
 
 export const getDetails = async (req, res) => {
   try {
-    const pro = await proModel.find().populate("location").populate("category");
+    const pro = await proModel
+  .find({ status: 'Active' })
+  .populate('location')
+  .populate('category');
+
     const category = await categoryModel.find();
     res.json({ status: true, pro: pro, category: category });
   } catch (error) {

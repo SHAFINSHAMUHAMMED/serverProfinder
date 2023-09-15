@@ -4,14 +4,13 @@ import adminSchema from "../models/adminSchema.js";
 import UserSchema from "../models/userSchema.js";
 import CategorySchema from "../models/categorySchema.js";
 import ProSchema from "../models/professionalSchema.js";
-import TransactionSchema from "../models/transactionSchema.js"
+import TransactionSchema from "../models/transactionSchema.js";
 import { generateAdminToken } from "../middleware/auth.js";
 import userModel from "../models/userSchema.js";
 
 export const adminLogin = async (req, res) => {
   try {
     const data = req.body;
-    console.log(data);
     const admin = await adminSchema.findOne({ email: data.email });
     if (admin) {
       if (admin.password == data.rpassword) {
@@ -26,12 +25,14 @@ export const adminLogin = async (req, res) => {
           (adminSignUp.message = "you are logged in"),
           (adminSignUp.token = token),
           (adminSignUp.name = admin.email);
-        return res.json({ adminSignUp });
+        return res.status(200).json({ adminSignUp });
       } else {
-        res.json({ status: false, message: "password dosent match" });
+        res
+          .status(200)
+          .json({ status: false, message: "password dosent match" });
       }
     } else {
-      res.json({ status: false, message: "not an Admin" });
+      res.status(200).json({ status: false, message: "not an Admin" });
     }
   } catch (error) {
     console.log(error);
@@ -39,8 +40,12 @@ export const adminLogin = async (req, res) => {
   }
 };
 export const findPros = async (req, res) => {
-  const pros = await ProSchema.find();
-  res.json({ status: true, pros: pros });
+  try {
+    const pros = await ProSchema.find();
+    res.status(200).json({ status: true, pros: pros });
+  } catch (error) {
+    res.status(500).json({ error });
+  }
 };
 
 export const blockpro = async (req, res) => {
@@ -67,8 +72,12 @@ export const blockpro = async (req, res) => {
 };
 
 export const findUser = async (req, res) => {
-  const User = await UserSchema.find();
-  res.status(200).json({ status: true, user: User });
+  try {
+    const User = await UserSchema.find();
+    res.status(200).json({ status: true, user: User });
+  } catch (error) {
+    res.status(500).json({ error });
+  }
 };
 
 export const blockuser = async (req, res) => {
@@ -106,11 +115,11 @@ export const category = async (req, res) => {
 export const addCategory = async (req, res) => {
   try {
     const { typeList } = req.body;
-    console.log(typeList, "fghjkdfghjk");
     const duplicate = await CategorySchema.findOne({ name: typeList });
-    console.log(duplicate);
     if (duplicate) {
-      res.json({ status: false, message: "Category already exists" });
+      res
+        .status(200)
+        .json({ status: false, message: "Category already exists" });
     } else {
       const types = await CategorySchema.create({
         name: typeList,
@@ -131,7 +140,9 @@ export const deleteCategory = async (req, res) => {
     const exists = await ProSchema.find({ category: type_id });
     const categoryExists = exists.some((item) => item.category === type_id);
     if (categoryExists) {
-      return res.json({ status: false, message: "User exists in this type" });
+      return res
+        .status(200)
+        .json({ status: false, message: "User exists in this type" });
     } else {
       await CategorySchema.deleteOne({ _id: type_id });
       res
@@ -172,55 +183,77 @@ export const editCategory = async (req, res) => {
   }
 };
 
-export const getPayOutReq = async (req,res) => {
-  try{
-   const data= await TransactionSchema.find(
-      {withdrawStatus:'requested'}
-    ).populate("proId")
-    if(data){
-      res.status(200).json({status:true,data})
-    }else{
-      res.status(200).json({status:false})
+export const getPayOutReq = async (req, res) => {
+  try {
+    const data = await TransactionSchema.find({
+      withdrawStatus: "requested",
+    }).populate("proId");
+    if (data) {
+      res.status(200).json({ status: true, data });
+    } else {
+      res.status(200).json({ status: false });
     }
-  }catch(error){
-
+  } catch (error) {
+    res.status(500).json({ error });
   }
-}
+};
 
-export const upateTransReq = async (req,res) => {
-  const id = req.body.id
-  const role = req.body.role
-  const amt = req.body.amt
-  console.log(id,role,amt);
-  try{
-    if(role=='pro'){
-       const update = await TransactionSchema.findOneAndUpdate(
-      {_id:id},
-      {$set:{
-        withdrawStatus:'completed', 
-      }}
-    )
-    if(update){
-      console.log(123);
-      const pro = await ProSchema.updateOne(
-        {_id:update.proId},
+export const upateTransReq = async (req, res) => {
+  const id = req.body.id;
+  const role = req.body.role;
+  const amt = req.body.amt;
+  try {
+    if (role == "pro") {
+      const update = await TransactionSchema.findOneAndUpdate(
+        { _id: id },
         {
-          $inc: {
-            wallet:-+amt,
+          $set: {
+            withdrawStatus: "completed",
           },
-        })
-        if(update&&pro){
-          console.log(123456);
-          res.status(200).json({status:true})
-        }else{
-          console.log(789123);
-          res.status(200).json({status:false})
         }
+      );
+      if (update) {
+        const pro = await ProSchema.updateOne(
+          { _id: update.proId },
+          {
+            $inc: {
+              wallet: -+amt,
+            },
+          }
+        );
+        if (update && pro) {
+          res.status(200).json({ status: true });
+        } else {
+          res.status(200).json({ status: false });
+        }
+      }
     }
-    }
-   
-  }catch(error){
+  } catch (error) {
     console.log(error);
-    res.status(500).json({status:false})
+    res.status(500).json({ status: false });
   }
-}
+};
+
+export const getDetails = async (req, res) => {
+  try {
+    const user = await UserSchema.find({ isVerified: true });
+    const pro = await ProSchema.find({ isVerified: true });
+    const profit = await adminSchema.find({}, { profit: 1, _id: 0 });
+    res.status(200).json({ user, pro, profit });
+  } catch (error) {
+    res.status(500).json({ message: "error occcured" });
+  }
+};
+
+export const getTransactions = async (req, res) => {
+  try {
+    const transactions = await TransactionSchema.find({})
+      .populate("proId")
+      .populate("userID")
+      .populate("orderId")
+      .sort({ date: -1 });
+    res.status(200).json({ transactions });
+  } catch (error) {
+    res.status(500).json({ message: "Error occured" });
+  }
+};

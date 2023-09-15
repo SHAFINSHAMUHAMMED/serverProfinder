@@ -19,7 +19,6 @@ export const RegisterPost = async (req, res) => {
     const location = await locationModel.findOne({
       location: proDetails.location,
     });
-    console.log(location);
     let userLocation;
     if (location) {
       userLocation = location;
@@ -37,6 +36,7 @@ export const RegisterPost = async (req, res) => {
         phone: proDetails.phone,
         category: proDetails.category,
         location: userLocation._id,
+        joinedOn: new Date(),
         charge: {
           partime: proDetails.partTime,
           fulltime: proDetails.fullTime,
@@ -73,6 +73,7 @@ export const RegisterPost = async (req, res) => {
               name: proDetails.name,
               phone: proDetails.phone,
               password: proDetails.password,
+              joinedOn:new Date(),
             },
           }
         );
@@ -88,7 +89,7 @@ export const RegisterPost = async (req, res) => {
       }
     }
   } catch (error) {
-    console.log(error, "hhhhhhhhhhh");
+    console.log(error);
     res.status(500).json({ message: error.message });
   }
 };
@@ -106,7 +107,6 @@ export const sendVerifyMail = async (proname, email, pro_id) => {
         pass: process.env.EMAILPASS,
       },
     });
-    console.log(process.env.EMAILPASS);
     const mailOption = {
       from: "codershafinsha@gmail.com",
       to: email,
@@ -116,7 +116,6 @@ export const sendVerifyMail = async (proname, email, pro_id) => {
 
     const deleteData = async () => {
       const res = await proModel.deleteOne({ email });
-      console.log(res);
     };
 
     return new Promise((resolve, reject) => {
@@ -141,7 +140,6 @@ export const sendVerifyMail = async (proname, email, pro_id) => {
 export const verifyMails = async (req, res) => {
   try {
     const { id } = req.body;
-    console.log(id, 11111111111111);
     const check = await proModel.findOne({ _id: id });
     if (check) {
       if (check.isVerified === false) {
@@ -234,7 +232,6 @@ export const googleLogin = async (req, res) => {
   const proData = req.body.payload;
   const pro = await proModel.findOne({ email: proData.email });
   if (pro) {
-    console.log(pro);
     if (!pro.googleLogin) {
       await proModel.updateOne(
         { email: proData.email },
@@ -289,7 +286,6 @@ export const proEdit = async (req, res) => {
   const id = req.body.id;
   const file = req.file;
   let img;
-  console.log(req.body);
   try {
     const pro = await proModel.findOne({phone:data.phone})
     if(pro._id!=id){
@@ -309,21 +305,16 @@ export const proEdit = async (req, res) => {
             image: img,
             charge: { partime: data.partTime, fulltime: data.fullTime },
             description: data.description,
-          },
-          $addToSet: {
-            skills: {
-              $each: data.skills && data.skills.length > 0
-                ? data.skills.filter(skill => !pro.skills.includes(skill))
-                : [],
-            },
+            skills: data.skills,
           },
         }
       );
+      
       res.json({ status: "success", image: img });
     }
 
   } catch (error) {
-    console.log(error.message, "immaaa");
+    console.log(error.message);
     res.status(500).json({ status: "failed", message: error.message });
   }
 };
@@ -346,3 +337,109 @@ export const proDetails = async (req, res) => {
     res.status(500).json({ status: false });
   }
 };
+
+export const galleryUpload = async (req,res) => {
+  const uploadedFiles = req.files;
+  const proId = req.body.proId
+
+  try{
+    let uploadedImages = [];
+    const pro = await proModel.findOne({_id:proId})
+    if(pro){
+    if (uploadedFiles) {
+      for (const file of uploadedFiles) {
+        const upload = await cloudinary.uploader.upload(file.path);
+        uploadedImages.push(upload.secure_url);
+
+        // Delete
+        fs.unlinkSync(file.path);
+      }
+    }
+    const update = await proModel.updateOne(
+      { _id: proId },
+      {
+        $push: {
+          gallery: { $each: uploadedImages.map(imageUrl => ({ image: imageUrl })) }
+        }
+      }
+    );
+    if(update.modifiedCount>0){
+      res.status(200).json({ status: true, message:'Image Uploaded' });
+    }else{
+      res.status(500).json({status:false, message:'Error While Uploading'})
+    }
+  }else{
+    res.status(500).json({status:false, message:'Server Error'})
+  }
+    
+  }catch(error){
+    res.status(500).json({staus:false,message:'Error please try again'})
+  }
+}
+
+export const getGallery = async (req,res) => {
+
+  const proId = req.query.proId;
+  try{
+    const gallery = await proModel.findOne({_id:proId},{ gallery: 1 })
+    console.log(gallery);
+    if(gallery){
+      res.status(200).json({gallery})
+    }else{
+      res.status(200).json({message:'No Gallery Found'})
+    }
+  }catch(error){
+    console.error("Error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+}
+
+export const deleteImage = async (req, res) => {
+  const proId = req.body.proId;
+  const id = req.body.img_id;
+
+  try {
+    const update = await proModel.updateOne(
+      { _id: proId },
+      { $pull: { gallery: { _id: id } } }
+    );
+
+    if (update.modifiedCount > 0) {
+      res.status(200).json({ status: true, message: 'Image Deleted' });
+    } else {
+      res.status(500).json({ status: false, message: 'Server not Responding' });
+    }
+  } catch (error) {
+    res.status(500).json({ status: false, message: 'Error while deleting image' });
+  }
+};
+
+export const changeAvailability = async (req,res) => {
+  const id = req.body.id
+  const status = req.body.status
+  let change=""
+  
+  try{
+    console.log(id,status);
+    if(status=="Active"){
+      change="Deactive"
+    }else{
+      change="Active"
+    }
+    console.log(change);
+
+    const update = await proModel.updateOne({_id:id},
+      {
+        $set:{status:change}
+      })
+      if(update.modifiedCount>0){
+        res.status(200).json({status:true,message:'updated'})
+      }else{
+        res.status(500).json({status:false,message:'server error'})
+      }
+  }catch(error){
+    console.log(error);
+    res.status(500).json({status:false,message:'server error'})
+
+  }
+}

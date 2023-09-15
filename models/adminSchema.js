@@ -10,6 +10,10 @@ const adminSchema = new mongoose.Schema(
         password: {
             type: String,
             
+        },
+        profit: {
+            type:Number,
+            default:0
         }
     },
     )
