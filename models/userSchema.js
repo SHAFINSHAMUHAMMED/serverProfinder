@@ -48,6 +48,10 @@ const userSchema = new mongoose.Schema(
               type: Number,
               default: 0,
           }, 
+          kyc: {
+            type: String,
+            default: 'notSend',
+          },
         orders: [
             {
               type: mongoose.Schema.Types.ObjectId,

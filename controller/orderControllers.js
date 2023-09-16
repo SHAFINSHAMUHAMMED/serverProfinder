@@ -19,7 +19,8 @@ export const getBookings = async (req, res) => {
     if (proId) {
       const orders = await orderSchema
         .find({ proId: proId })
-        .populate("userID").sort({date:-1});
+        .populate("userID")
+        .sort({ date: -1 });
       if (orders) {
         const bookingsWithDate = orders.filter((order) => {
           const orderDate = new Date(order.date);
@@ -44,7 +45,8 @@ export const getBookings = async (req, res) => {
     } else if (userId) {
       const orders = await orderSchema
         .find({ userID: userId })
-        .populate("proId").sort({date:-1});
+        .populate("proId")
+        .sort({ date: -1 });
       if (orders) {
         res.status(200).json({ status: true, orders });
       } else {
@@ -115,19 +117,21 @@ export const verifyrzpay = async (req, res) => {
           zip: formData.zip,
         },
       });
-      if(orderData){
+      if (orderData) {
         const transaction = await transactionSchema.create({
-          PaymentType: 'in',
-          To: 'admin',
-          Type: 'booking',
+          PaymentType: "in",
+          To: "admin",
+          Type: "booking",
           date: new Date(),
           orderId: orderData._id,
-          userID:orderData.userID,
-          proId:orderData.proId,
-        })
+          userID: orderData.userID,
+          proId: orderData.proId,
+        });
       }
-    
-      res.status(200).json({ status: true, message: "Payment success", orderData });
+
+      res
+        .status(200)
+        .json({ status: true, message: "Payment success", orderData });
     } else {
       console.log("invalid signature");
       res.json({ status: false, message: "Invalid signature" });
@@ -139,75 +143,125 @@ export const verifyrzpay = async (req, res) => {
 };
 
 //////////cancell Booking////////
+import mongoose from "mongoose";
+
 export const cancellJob = async (req, res) => {
-  const id = req.body.id;
-  const role = req.body.Role;
-  const payment = req.body.payment;
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
   try {
+    const id = req.body.id;
+    const role = req.body.Role;
+    const payment = req.body.payment;
+
     const order = await orderSchema.findOne({ _id: id });
-    const cancell = await orderSchema.updateOne(
-      { _id: id },
-      {
-        $set: {
-          work_status: {
-            status: "cancelled",
-            role: role,
-          },
-        },
-      }
-    );
     let update = null;
+    let create = null;
+    let cancell = null;
 
     if (role === "user") {
       if (payment > 100) {
-        const create = await transactionSchema.create({
-          PaymentType: "in",
-          date: new Date(),
-          orderId: id,
-          To:'user',
-          userID:order.userID,
-          proId:order.proId,
-          Type: "refund",
-        });
+        create = await transactionSchema.create(
+          [
+            {
+              PaymentType: "in",
+              date: new Date(),
+              orderId: id,
+              To: "user",
+              userID: order.userID,
+              proId: order.proId,
+              Type: "refund",
+            },
+            // Add more transaction
+          ],
+          { session: session }
+        );
         update = await userModel.updateOne(
           { _id: order.userID },
           {
             $inc: {
               wallet: payment - 100,
             },
+          },
+          { session: session }
+        );
+        cancell = await orderSchema.updateOne(
+          { _id: id },
+          {
+            $set: {
+              work_status: {
+                status: "cancelled",
+                role: role,
+              },
+            },
+          }
+        );
+      } else {
+        cancell = await orderSchema.updateOne(
+          { _id: id },
+          {
+            $set: {
+              work_status: {
+                status: "cancelled",
+                role: role,
+              },
+            },
           }
         );
       }
     } else {
-      const create = await transactionSchema.create({
-        PaymentType: "in",
-        date: new Date(),
-        orderId: id,
-        To: 'user',
-        userID:order.userID,
-        proId:order.proId,
-        Type: "refund",
-      });
+      create = await transactionSchema.create(
+        {
+          PaymentType: "in",
+          date: new Date(),
+          orderId: id,
+          To: "user",
+          userID: order.userID,
+          proId: order.proId,
+          Type: "refund",
+        },
+        { session: session }
+      );
       update = await userModel.updateOne(
         { _id: order.userID },
         {
           $inc: {
             wallet: payment,
           },
+        },
+        { session: session }
+      );
+      cancell = await orderSchema.updateOne(
+        { _id: id },
+        {
+          $set: {
+            work_status: {
+              status: "cancelled",
+              role: role,
+            },
+          },
         }
       );
     }
 
-    if (cancell && update) {
+    if (cancell && update && create) {
+      await session.commitTransaction();
+      session.endSession();
       res.status(200).json({ status: true, message: "Cancelled Amount Refunded" });
     } else if (cancell.modifiedCount > 0) {
+      await session.commitTransaction();
+      session.endSession();
       res.status(200).json({ status: true, message: "Cancelled" });
     } else {
-      res.json({ status: false, message: "some error occured" });
+      await session.abortTransaction();
+      session.endSession();
+      res.json({ status: false, message: "some error occurred" });
     }
   } catch (error) {
-    console.log(error);
-    res.status(500).json({ staus: false, message: "Error" });
+    console.error(error);
+    await session.abortTransaction();
+    session.endSession();
+    res.status(500).json({ status: false, message: "Error" });
   }
 };
 
@@ -232,7 +286,6 @@ export const acceptJob = async (req, res) => {
 
 //order conformation otp
 export const workCompleted = async (req, res) => {
-
   const id = req.body.bookingId;
   try {
     const order = await orderSchema.findOne({ _id: id });
@@ -260,20 +313,21 @@ export const workCompleted = async (req, res) => {
         if (update) {
           const create = await transactionSchema.create({
             PaymentType: "in",
-            To: 'pro',
+            To: "pro",
             date: new Date(),
             orderId: id,
             Type: "work done",
-            userID:order.userID,
-            proId:order.proId,
+            userID: order.userID,
+            proId: order.proId,
           });
           const update = await adminModel.updateOne(
-            {},{
-              $inc:{
-                profit:50,
-              }
+            {},
+            {
+              $inc: {
+                profit: 50,
+              },
             }
-          )
+          );
         }
       }
 
@@ -346,95 +400,90 @@ export const addReview = async (req, res) => {
   }
 };
 
-export const transactions = async (req,res) => {
-  const id = req.query.id
-  const role = req.query.role
-  try{
-    if(role=='user'){
-      const trans = await transactionSchema.find({
-        userID:id,
-        Type: { $ne: 'booking' },
-        To: {$eq: 'user'}
-      }).populate('orderId').populate('proId')
-      if(trans){
-        res.status(200).json({status:true, data:trans})
-      }else{
-        res.status(200).json({status:false})
+export const transactions = async (req, res) => {
+  const id = req.query.id;
+  const role = req.query.role;
+  try {
+    if (role == "user") {
+      const trans = await transactionSchema
+        .find({
+          userID: id,
+          Type: { $ne: "booking" },
+          To: { $eq: "user" },
+        })
+        .populate("orderId")
+        .populate("proId");
+      if (trans) {
+        res.status(200).json({ status: true, data: trans });
+      } else {
+        res.status(200).json({ status: false });
       }
-    }else{
-      const trans = await transactionSchema.find({
-        proId:id,
-        Type: { $ne: 'booking' },
-        To: {$eq: 'pro'}
-      }).populate('orderId').populate('userID')
-      if(trans){
-        res.status(200).json({status:true, data:trans})
-      }else{
-        res.status(200).json({status:false})
+    } else {
+      const trans = await transactionSchema
+        .find({
+          proId: id,
+          Type: { $ne: "booking" },
+          To: { $eq: "pro" },
+        })
+        .populate("orderId")
+        .populate("userID");
+      if (trans) {
+        res.status(200).json({ status: true, data: trans });
+      } else {
+        res.status(200).json({ status: false });
       }
     }
-  }catch(error){
-    
-  }
-}
+  } catch (error) {}
+};
 
-export const withdrawReq = async (req,res)=>{
-  const formdata = req.body.formData
-  const role = req.body.role
-  const id = req.body.id
-  try{
+export const withdrawReq = async (req, res) => {
+  const formdata = req.body.formData;
+  const role = req.body.role;
+  const id = req.body.id;
+  try {
     let data = null;
-    if(role=='user'){
-       data = await transactionSchema.create(
-        {
+    if (role == "user") {
+      data = await transactionSchema.create({
         // PaymentType: "out", make out after accept payment
         date: new Date(),
-        To: 'user',
+        To: "user",
         Type: "withdrawal",
-        withdrawStatus: 'requested',
+        withdrawStatus: "requested",
         userID: id,
-        accDetails:
-          {
-            accNo: formdata.accountNumber,
-            amt: formdata.amount,
-            accHolder: formdata.accountHolder,
-            bankName: formdata.bankName,
-            ifsc:formdata.ifscCode,
-            branch: formdata.branch,
-
-          }
-        
-      }
-        )
-    }else{
-       data = await transactionSchema.create(
-        {
+        accDetails: {
+          accNo: formdata.accountNumber,
+          amt: formdata.amount,
+          accHolder: formdata.accountHolder,
+          bankName: formdata.bankName,
+          ifsc: formdata.ifscCode,
+          branch: formdata.branch,
+        },
+      });
+    } else {
+      data = await transactionSchema.create({
         // PaymentType: "out", make out after accept payment
         date: new Date(),
-        To: 'pro',
+        To: "pro",
         Type: "withdrawal",
-        withdrawStatus: 'requested',
+        withdrawStatus: "requested",
         proId: id,
-        accDetails:
-          {
-            accNo: formdata.accountNumber,
-            amt: formdata.amount,
-            accHolder: formdata.accountHolder,
-            bankName: formdata.bankName,
-            ifsc:formdata.ifscCode,
-            branch: formdata.branch,
-
-          }
-      }
-        )
+        accDetails: {
+          accNo: formdata.accountNumber,
+          amt: formdata.amount,
+          accHolder: formdata.accountHolder,
+          bankName: formdata.bankName,
+          ifsc: formdata.ifscCode,
+          branch: formdata.branch,
+        },
+      });
     }
-    if(data){
-      res.status(200).json({status:true,message:'Withdrawal Requested'})
-    }else{
-      res.status(200).json({status:false,message:'Error occured'})
+    if (data) {
+      res.status(200).json({ status: true, message: "Withdrawal Requested" });
+    } else {
+      res.status(200).json({ status: false, message: "Error occured" });
     }
-  }catch(error){
+  } catch (error) {
     console.log(error);
-    res.status(500).json({status:false,message:'Error occured'})
+    res.status(500).json({ status: false, message: "Error occured" });
   }
-}
+};

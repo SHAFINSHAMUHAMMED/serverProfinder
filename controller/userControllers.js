@@ -10,6 +10,7 @@ env.config();
 import cloudinary from "../confing/cloudinary.js";
 import fs from "fs";
 import orderModel from "../models/orderSchema.js";
+import adminModel from "../models/adminSchema.js";
 
 export const Loginpost = async (req, res) => {
   let userSignUp = {
@@ -407,4 +408,44 @@ export const changepassword = async (req,res) => {
   } catch (error){
     res.status(500).json({message:'Error Occured'})
   }
+}
+
+export const kycUpload = async (req,res)=>{
+  const file = req.file;
+  const id = req.body.id
+  const role = req.body.role
+  let img;
+  try {
+    const user = await userModel.findOne({_id:id})
+      if (file) {
+        const upload = await cloudinary.uploader.upload(file?.path);
+        img = upload.secure_url;
+        fs.unlinkSync(file.path);
+      }
+      const toAdmin = await adminModel.updateOne({},
+        {$push:
+          {kyc:{
+            userId:id,
+            role:role,
+            image:img,
+            name:user.name,
+            email:user.email
+          }
+        }
+      })
+
+      const update = await userModel.updateOne(
+        { _id: id },
+        { $set: { kyc:'uploaded' } }
+      );
+      if(update&&toAdmin){
+        res.json({ status: true, image: img });
+      }else{
+        res.status(500).json({status:false})
+      }
+  } catch (error) {
+    console.log(error.message);
+    res.status(500).json({ status: "failed", message: error.message });
+  }
+  
 }

@@ -72,7 +72,11 @@ const professionalSchema = new mongoose.Schema(
         wallet: {
               type: Number,
               default: 0,
-          },          
+          },   
+          kyc: {
+            type: String,
+            default: 'notSend',
+          },      
         orders: [
             {
               type: mongoose.Schema.Types.ObjectId,

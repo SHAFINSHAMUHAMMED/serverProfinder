@@ -17,14 +17,12 @@ app.use(express.urlencoded({ limit: "30mb", extended: true }));
 app.use(express.static("public"));
 app.use(cookieParser());
 
-// Configure specific origins, methods, and headers
 const corsOptions = {
   origin: "*",
   methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
   allowedHeaders: ["Content-Type", "Authorization"],
 };
 
-// Enable CORS with the custom options
 app.use(cors(corsOptions));
 
 import adminRouter from "./routes/admin.js";

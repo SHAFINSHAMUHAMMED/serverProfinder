@@ -11,7 +11,8 @@ import {
   getGallery,
   galleryUpload,
   deleteImage,
-  changeAvailability
+  changeAvailability,
+  kycUpload
 } from "../controller/professionalsControllers.js";
 import {
   cancellJob,
@@ -48,6 +49,8 @@ router.get("/getGallery",verifyProToken,getGallery)
 router.post("/galleryUpload",upload.array('file'),verifyProToken,galleryUpload)
 router.patch("/deleteImage", verifyProToken,deleteImage)
 router.patch("/changeAvailability",verifyProToken,changeAvailability)
+router.post("/kycUpload", upload.single('file'),verifyProToken,kycUpload)
+
 
 
 export default router;

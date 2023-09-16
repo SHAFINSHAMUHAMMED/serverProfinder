@@ -2,6 +2,7 @@ import bcrypt from "bcrypt";
 import proModel from "../models/professionalSchema.js";
 import categoryModel from "../models/categorySchema.js";
 import orderModel from "../models/orderSchema.js";
+import adminModel from "../models/adminSchema.js";
 import locationModel from "../models/locationSchema.js";
 import { generateProToken } from "../middleware/auth.js";
 import nodemailer from "nodemailer";
@@ -73,7 +74,7 @@ export const RegisterPost = async (req, res) => {
               name: proDetails.name,
               phone: proDetails.phone,
               password: proDetails.password,
-              joinedOn:new Date(),
+              joinedOn: new Date(),
             },
           }
         );
@@ -144,7 +145,9 @@ export const verifyMails = async (req, res) => {
     if (check) {
       if (check.isVerified === false) {
         await proModel.updateOne({ _id: id }, { $set: { isVerified: true } });
-        res.status(200).json({ Verification: true, message: "Verification successful" });
+        res
+          .status(200)
+          .json({ Verification: true, message: "Verification successful" });
       } else {
         res.json({ Verification: false, message: "Already Verified" });
       }
@@ -287,10 +290,12 @@ export const proEdit = async (req, res) => {
   const file = req.file;
   let img;
   try {
-    const pro = await proModel.findOne({phone:data.phone})
-    if(pro._id!=id){
-      res.status(200).json({staus:false,message:'Phone Number Already Exist'})
-    }else{
+    const pro = await proModel.findOne({ phone: data.phone });
+    if (pro._id != id) {
+      res
+        .status(200)
+        .json({ staus: false, message: "Phone Number Already Exist" });
+    } else {
       if (file) {
         const upload = await cloudinary.uploader.upload(file?.path);
         img = upload.secure_url;
@@ -309,10 +314,9 @@ export const proEdit = async (req, res) => {
           },
         }
       );
-      
+
       res.json({ status: "success", image: img });
     }
-
   } catch (error) {
     console.log(error.message);
     res.status(500).json({ status: "failed", message: error.message });
@@ -338,60 +342,62 @@ export const proDetails = async (req, res) => {
   }
 };
 
-export const galleryUpload = async (req,res) => {
+export const galleryUpload = async (req, res) => {
   const uploadedFiles = req.files;
-  const proId = req.body.proId
+  const proId = req.body.proId;
 
-  try{
+  try {
     let uploadedImages = [];
-    const pro = await proModel.findOne({_id:proId})
-    if(pro){
-    if (uploadedFiles) {
-      for (const file of uploadedFiles) {
-        const upload = await cloudinary.uploader.upload(file.path);
-        uploadedImages.push(upload.secure_url);
+    const pro = await proModel.findOne({ _id: proId });
+    if (pro) {
+      if (uploadedFiles) {
+        for (const file of uploadedFiles) {
+          const upload = await cloudinary.uploader.upload(file.path);
+          uploadedImages.push(upload.secure_url);
 
-        // Delete
-        fs.unlinkSync(file.path);
-      }
-    }
-    const update = await proModel.updateOne(
-      { _id: proId },
-      {
-        $push: {
-          gallery: { $each: uploadedImages.map(imageUrl => ({ image: imageUrl })) }
+          // Delete
+          fs.unlinkSync(file.path);
         }
       }
-    );
-    if(update.modifiedCount>0){
-      res.status(200).json({ status: true, message:'Image Uploaded' });
-    }else{
-      res.status(500).json({status:false, message:'Error While Uploading'})
+      const update = await proModel.updateOne(
+        { _id: proId },
+        {
+          $push: {
+            gallery: {
+              $each: uploadedImages.map((imageUrl) => ({ image: imageUrl })),
+            },
+          },
+        }
+      );
+      if (update.modifiedCount > 0) {
+        res.status(200).json({ status: true, message: "Image Uploaded" });
+      } else {
+        res
+          .status(500)
+          .json({ status: false, message: "Error While Uploading" });
+      }
+    } else {
+      res.status(500).json({ status: false, message: "Server Error" });
     }
-  }else{
-    res.status(500).json({status:false, message:'Server Error'})
+  } catch (error) {
+    res.status(500).json({ staus: false, message: "Error please try again" });
   }
-    
-  }catch(error){
-    res.status(500).json({staus:false,message:'Error please try again'})
-  }
-}
+};
 
-export const getGallery = async (req,res) => {
-
+export const getGallery = async (req, res) => {
   const proId = req.query.proId;
-  try{
-    const gallery = await proModel.findOne({_id:proId},{ gallery: 1 })
-    if(gallery){
-      res.status(200).json({gallery})
-    }else{
-      res.status(200).json({message:'No Gallery Found'})
+  try {
+    const gallery = await proModel.findOne({ _id: proId }, { gallery: 1 });
+    if (gallery) {
+      res.status(200).json({ gallery });
+    } else {
+      res.status(200).json({ message: "No Gallery Found" });
     }
-  }catch(error){
+  } catch (error) {
     console.error("Error:", error);
     res.status(500).json({ error: "Internal server error" });
   }
-}
+};
 
 export const deleteImage = async (req, res) => {
   const proId = req.body.proId;
@@ -404,41 +410,86 @@ export const deleteImage = async (req, res) => {
     );
 
     if (update.modifiedCount > 0) {
-      res.status(200).json({ status: true, message: 'Image Deleted' });
+      res.status(200).json({ status: true, message: "Image Deleted" });
     } else {
-      res.status(500).json({ status: false, message: 'Server not Responding' });
+      res.status(500).json({ status: false, message: "Server not Responding" });
     }
   } catch (error) {
-    res.status(500).json({ status: false, message: 'Error while deleting image' });
+    res
+      .status(500)
+      .json({ status: false, message: "Error while deleting image" });
   }
 };
 
-export const changeAvailability = async (req,res) => {
-  const id = req.body.id
-  const status = req.body.status
-  let change=""
-  
-  try{
-    console.log(id,status);
-    if(status=="Active"){
-      change="Deactive"
-    }else{
-      change="Active"
+export const changeAvailability = async (req, res) => {
+  const id = req.body.id;
+  const status = req.body.status;
+  let change = "";
+
+  try {
+    console.log(id, status);
+    if (status == "Active") {
+      change = "Deactive";
+    } else {
+      change = "Active";
     }
     console.log(change);
 
-    const update = await proModel.updateOne({_id:id},
+    const update = await proModel.updateOne(
+      { _id: id },
       {
-        $set:{status:change}
-      })
-      if(update.modifiedCount>0){
-        res.status(200).json({status:true,message:'updated'})
-      }else{
-        res.status(500).json({status:false,message:'server error'})
+        $set: { status: change },
       }
-  }catch(error){
+    );
+    if (update.modifiedCount > 0) {
+      res.status(200).json({ status: true, message: "updated" });
+    } else {
+      res.status(500).json({ status: false, message: "server error" });
+    }
+  } catch (error) {
     console.log(error);
-    res.status(500).json({status:false,message:'server error'})
-
+    res.status(500).json({ status: false, message: "server error" });
   }
-}
+};
+
+export const kycUpload = async (req, res) => {
+  const file = req.file;
+  const id = req.body.id;
+  const role = req.body.role;
+  let img;
+  try {
+    const pro = await proModel.findOne({ _id: id });
+    if (file) {
+      const upload = await cloudinary.uploader.upload(file?.path);
+      img = upload.secure_url;
+      fs.unlinkSync(file.path);
+    }
+    const toAdmin = await adminModel.updateOne(
+      {},
+      {
+        $push: {
+          kyc: {
+            proId: id,
+            role: role,
+            image: img,
+            name: pro.name,
+            email: pro.email,
+          },
+        },
+      }
+    );
+
+    const update = await proModel.updateOne(
+      { _id: id },
+      { $set: { kyc: "uploaded" } }
+    );
+    if (update && toAdmin) {
+      res.json({ status: true, image: img });
+    } else {
+      res.status(500).json({ status: false });
+    }
+  } catch (error) {
+    console.log(error.message);
+    res.status(500).json({ status: "failed", message: error.message });
+  }
+};

@@ -12,7 +12,10 @@ import {
   getPayOutReq,
   upateTransReq,
   getDetails,
-  getTransactions
+  getTransactions,
+  kycRequests,
+  kycVerify,
+  rejectkyc
 } from "../controller/admin.js";
 import { verifyAdminToken } from "../middleware/auth.js";
 
@@ -30,5 +33,8 @@ router.get("/getRequests",verifyAdminToken,getPayOutReq)
 router.patch("/upateTransReq",verifyAdminToken,upateTransReq)
 router.get("/getDetails",verifyAdminToken,getDetails)
 router.get("/getTransactions",verifyAdminToken,getTransactions)
+router.get("/kycRequests",verifyAdminToken,kycRequests)
+router.patch("/kycVerify",verifyAdminToken,kycVerify)
+router.patch("/rejectkyc",verifyAdminToken,rejectkyc)
 
 export default router;

@@ -12,7 +12,8 @@ import {
   userDetails,
   userEdit,
   forgotpassword,
-  changepassword
+  changepassword,
+  kycUpload
 } from "../controller/userControllers.js";
 
 import {
@@ -56,6 +57,7 @@ router.get("/loadChat",verifyToken,loadChat)
 router.get("/listChat",verifyToken,listChat)
 router.get("/transactions", verifyToken,transactions)
 router.post("/withdrawReq",verifyToken,withdrawReq)
+router.post("/kycUpload",upload.single('file'),verifyToken,kycUpload)
 
 
 export default router;

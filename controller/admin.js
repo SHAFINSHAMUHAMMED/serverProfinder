@@ -257,3 +257,82 @@ export const getTransactions = async (req, res) => {
     res.status(500).json({ message: "Error occured" });
   }
 };
+///////KYC//////////
+export const kycRequests = async (req, res) => {
+  try {
+    const kyc = await adminSchema.find({ "kyc.verified": false });
+    if (kyc) {
+      res.status(200).json({ status: true, data: kyc });
+    } else {
+      res.status(500).json({ status: false });
+    }
+  } catch (error) {
+    res.status(500).json({ status: false });
+  }
+};
+
+export const kycVerify = async (req, res) => {
+  const id = req.body.id;
+  const role = req.body.role;
+  const userId = req.body?.userId;
+  const proId = req.body?.proId;
+
+  try {
+    if (role == "user") {
+      const update = await userModel.updateOne(
+        { _id: userId },
+        { $set: { kyc: "verified" } }
+      );
+    } else {
+      const update = await ProSchema.updateOne(
+        { _id: proId },
+        { $set: { kyc: "verified" } }
+      );
+    }
+    const admin = await adminSchema.findOne({});
+    admin.kyc = admin.kyc.map((kycItem) => {
+      if (kycItem._id.equals(id)) {
+        kycItem.verified = true;
+      }
+      return kycItem;
+    });
+    await admin.save();
+
+    res
+      .status(200)
+      .json({ status: true, message: "KYC verification successful" });
+  } catch (error) {
+    res.status(500).json({ status: false });
+  }
+};
+
+export const rejectkyc = async (req, res) => {
+  const id = req.body.id;
+  const role = req.body.role;
+  const userId = req.body?.userId;
+  const proId = req.body?.proId;
+
+  try {
+    if (role == "user") {
+      const update = await userModel.updateOne(
+        { _id: userId },
+        { $set: { kyc: "rejected" } }
+      );
+    } else {
+      const update = await ProSchema.updateOne(
+        { _id: proId },
+        { $set: { kyc: "rejected" } }
+      );
+    }
+
+    const admin = await adminSchema.findOne({});
+
+    await admin.updateOne({ $pull: { kyc: { _id: id } } });
+    l;
+    res
+      .status(200)
+      .json({ status: true, message: "KYC data deleted successfully" });
+  } catch (error) {
+    res.status(500).json({ status: false });
+  }
+};

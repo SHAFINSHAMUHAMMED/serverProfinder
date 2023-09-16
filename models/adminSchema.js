@@ -14,7 +14,35 @@ const adminSchema = new mongoose.Schema(
         profit: {
             type:Number,
             default:0
-        }
+        },
+        kyc: [
+            {
+                userId: {
+                    type: mongoose.Schema.Types.ObjectId,
+                    ref: "users",
+                  },
+                  proId: {
+                    type: mongoose.Schema.Types.ObjectId,
+                    ref: "professionals",   
+                  },
+                  role: {
+                    type:String,
+                  },
+                  verified: {
+                    type: Boolean,
+                    default:false
+                  },
+                  image: {
+                    type:String
+                  },
+                  name: {
+                    type: String
+                  },
+                  email: {
+                    type: String
+                  },
+            }
+        ],
     },
     )
     const adminModel = mongoose.model('admin',adminSchema)
