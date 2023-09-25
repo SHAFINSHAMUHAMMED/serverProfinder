@@ -149,7 +149,7 @@ export const markMessagesAsRead = async (chatId, storeId) => {
         }
       });
       // Save the updated chat document
-      await chat.save();
+     return await chat.save();
     }
   } catch (error) {
     console.error(error);

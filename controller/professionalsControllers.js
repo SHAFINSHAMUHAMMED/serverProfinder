@@ -427,7 +427,6 @@ export const changeAvailability = async (req, res) => {
   let change = "";
 
   try {
-    console.log(id, status);
     if (status == "Active") {
       change = "Deactive";
     } else {
